@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  email          String          @unique
+  name           String?
+  password       String
+  role           String          @default("user")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  preferences    UserPreferences?
+  readingHistory ReadingHistory[]
+}
+
+model UserPreferences {
+  id                   String  @id @default(cuid())
+  userId               String  @unique
+  defaultLanguage      String  @default("en")
+  showTranslations     Boolean @default(true)
+  showGrammarNotes     Boolean @default(true)
+  difficultyLevel      Int     @default(1)
+  autoPlayTranslations Boolean @default(false)
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Comic {
+  id            String          @id @default(cuid())
+  title         String
+  description   String
+  author        String
+  artist        String
+  coverImage    String
+  genres        String[]
+  languages     String[]
+  status        String         @default("draft") // draft, published, archived
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  chapters      ComicChapter[]
+  readingHistory ReadingHistory[]
+}
+
+model ComicChapter {
+  id        String   @id @default(cuid())
+  number    Int
+  title     String
+  filePath  String
+  comicId   String
+  comic     Comic    @relation(fields: [comicId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([comicId, number])
+}
+
+model ReadingHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  comicId       String
+  lastChapter   Int      @default(1)
+  lastPage      Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comic         Comic    @relation(fields: [comicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, comicId])
+}
